@@ -9,7 +9,7 @@ import scala.util.Try
 
 object ItemParser {
   /**
-    * Parsed JSON from String
+    * Parses JSON from String
     *
     * @param string JSON String
     * @return Exception if JSON cannot be parsed and Sequence of Either major exceptions or Items with minor exceptions
