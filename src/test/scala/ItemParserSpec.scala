@@ -1,27 +1,97 @@
+
+import models.JsonParsingException._
 import services.ItemParser
-import models.Exceptions.ItemParsingException
 import org.scalatest._
 
-class ItemParserSpec extends FunSuite {
+class ItemParserSpec extends FunSuite with Matchers {
 
-  //To unfold json string, hover over \n, press Alt+Enter and select Convert to """String"""
-  val correctJSON: String = "{\n\t\"Level01\":[\n\t\t{\n\t\t\t\"text\":\"蚕\",\n\t\t\t\"translationVariants\": [\"silkworm\"],\n\t\t\t\"readingVariants\": [\"さん\"],\n\t\t\t\"precedence\": 0\n\t\t},\n\t\t{\n\t\t\t\"text\":\"韻\",\n\t\t\t\"translationVariants\":[\"rhyme\", \"elegance\", \"tone\"],\n\t\t\t\"readingVariants\":[\"いん\"],\n\t\t\t\"precedence\": 0\n\t\t}],\n\t\"Level03\":[\n\t\t{\n\t\t\"text\":\"謁\",\n\t\t\"translationVariants\":[\"audience\", \"audience with king\"],\n\t\t\"readingVariants\":[],\n\t\t\"precedence\": 0\n\t\t}\n\t]\n}"
-  val JSONWithNoText = "{\n\t\"Level01\":[\n\t\t{\n\t\t\"text\":\"\",\n\t\t\"translationVariants\":[\"audience\", \"audience with king\"],\n\t\t\"readingVariants\":[\"えっ\"],\n\t\t\"precedence\": 1\n\t\t}\n\t]\n}"
-  val JSONWithNothingToTest = "{\n\t\"Level01\":[\n\t\t{\n\t\t\"text\":\"謁\",\n\t\t\"translationVariants\":[],\n\t\t\"readingVariants\":[\"\"],\n\t\t\"precedence\": 1\n\t\t}\n\t]\n}"
 
-  test("Printing results of test sample№1") {
-    println(ItemParser.makeJSONOutOfString(correctJSON))
+  test("Printing results of valid test sample№1") {
+    println(ItemParser.getItemsOutOfString(validJSON))
   }
 
-  test("passing a faulty json should produce an error") {
-    assert(ItemParser.makeJSONOutOfString("randomString").isLeft)
+  test("Passing a faulty json should produce an error") {
+    assert(ItemParser.getItemsOutOfString("randomString").isLeft)
   }
-  //TODO figure out how to check types elegantly
-  test("Passing an item with no text should result in item exception") {
-    assert(ItemParser.makeJSONOutOfString(JSONWithNoText) == Right(Vector((None, Some(ItemParsingException)))))
+  test("Validating a correct item should not produce an exception") {
+    val item = ItemParser.getItemsOutOfString(CorrectItem).right.get
+    val results = ItemParser.validateItems(item)
+    assert(results.head._1.contains(item.head) && results.head._2.isEmpty)
   }
+  test("Validating an item without important field should produce a minor exception") {
+    val item = ItemParser.getItemsOutOfString(ItemWithoutADescrption).right.get
+    val results = ItemParser.validateItems(item)
+    assert(results.head._1.contains(item.head))
+    results.head._2.get shouldBe a[MinorItemParsingException]
+  }
+  test("Validating items without necessary fields should produce major exceptions") {
+    val items = ItemParser.getItemsOutOfString(itemsThatShouldRaiseMajorExceptions).right.get
+    val results = ItemParser.validateItems(items)
+    assert(results.forall(_._1.isEmpty))
+    results.foreach(_._2.get shouldBe a[MajorItemParsingException])
+  }
+  val validJSON: String =
+    """[
+      |    {
+      |		"text":"蚕",
+      |		"meaningVariants": ["silkworm"],
+      |		"readingVariants": ["さん"],
+      |		"precedence": 0,
+      |		"level": 1
+      |	},
+      |	{
+      |		"text":"韻",
+      |		"translationVariants":["rhyme", "elegance", "tone"],
+      |		"readingVariants":["いん"],
+      |		"precedence": 0,
+      |		"level": 1
+      |	},
+      |	{
+      |		"text":"謁",
+      |		"translationVariants":["audience", "audience with king"],
+      |		"readingVariants":[],
+      |		"precedence": 0,
+      |		"level": 3
+      |  	}
+      |]""".stripMargin
+  val CorrectItem =
+    """
+      |[
+      | {
+      |		"text":"蚕",
+      |		"meaningVariants": ["silkworm"],
+      |		"readingVariants": ["さん"],
+      |		"precedence": 0,
+      |   "description":"Last item in G6",
+      |		"level": 1
+      |	}
+      | ]
+    """.stripMargin
+  val ItemWithoutADescrption =
+    """
+      |[
+      |    {
+      |		"text":"韻",
+      |		"translationVariants":["rhyme", "elegance", "tone"],
+      |		"readingVariants":["いん"],
+      |		"precedence": 0,
+      |		"level": 1
+      |	}
+      | ]
+    """.stripMargin
 
-  test("Passing an item with text but with no fields that can be checked should results in item exception ") {
-    assert(ItemParser.makeJSONOutOfString(JSONWithNothingToTest) == Right(Vector(None, Some(ItemParsingException))))
-  }
+  val itemsThatShouldRaiseMajorExceptions =
+    """[
+      |		{
+      |		"text":"",
+      |		"translationVariants":["audience", "audience with king"],
+      |		"readingVariants":["えっ"],
+      |		"precedence": 1
+      |		},
+      |  {
+      |		"text":"謁",
+      |		"precedence": 1
+      |		}
+      |]
+      |""".stripMargin
 }
