@@ -25,8 +25,8 @@ object ItemParser {
       if (item.validate.isEmpty)
         (Some(item), None)
       else item.validate.get match {
-        case MajorItemParsingException(message) => (None, Some(MajorItemParsingException(s"For item $index $message ")))
-        case MinorItemParsingException(message) => (Some(item), Some(MinorItemParsingException(s"For item $index $message ")))
+        case MajorItemParsingException(message) => (None, Some(MajorItemParsingException(s"$message for item $index.")))
+        case MinorItemParsingException(message) => (Some(item), Some(MinorItemParsingException(s"$message for item $index.")))
       }
     }
   }

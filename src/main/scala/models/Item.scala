@@ -23,10 +23,10 @@ case class Item(text: Option[String], level: Option[Int], meaningVariants: Optio
   }
 
   private def constructExceptionMessage: String = {
-    val base = "there is no"
-    val elements = List((meaningVariants, "meaning variants"), (readingVariants, "reading variants")).map { case (field, name) => if (listNotExists(field)) name else "" } ++
-      List((description, "description"), (text, "text")).map { case (field, name) => if (valueNotExists(field)) name else "" }
-    elements.count(_.nonEmpty) match {
+    val base = "There is no "
+    val elements = (List((meaningVariants, "meaning variants"), (readingVariants, "reading variants")).map { case (field, name) => if (listNotExists(field)) name else "" } ++
+      List((description, "description"), (text, "text")).map { case (field, name) => if (valueNotExists(field)) name else "" }).filter(_.nonEmpty)
+    elements.length match {
       case 1 => base + elements.head
       case 2 => base + elements.head + " and " + elements.last
       case _ => elements.tail.init.foldLeft(base + elements.head)((a, b) => a.concat(", ").concat(b)) + " and " + elements.last

@@ -7,7 +7,8 @@ class ItemParserSpec extends FunSuite with Matchers {
 
 
   test("Printing results of valid test sample№1") {
-    println(ItemParser.getItemsOutOfString(validJSON))
+    var results = ItemParser.getItemsOutOfString(validJSON).right.get
+    println(ItemParser.validateItems(results))
   }
 
   test("Passing a faulty json should produce an error") {
