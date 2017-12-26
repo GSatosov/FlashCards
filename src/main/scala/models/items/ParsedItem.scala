@@ -1,7 +1,10 @@
-package models
+package models.items
 
-import models.JsonParsingException._
 
+import io.circe.syntax._
+import io.circe.Encoder
+import models.exceptions.JsonParsingException._
+import io.circe.generic.semiauto._
 
 /**
   * Class representing items that are to be reviewed.
@@ -12,7 +15,7 @@ import models.JsonParsingException._
   *
   */
 
-case class Item(text: Option[String], level: Option[Int], meaningVariants: Option[List[String]], readingVariants: Option[List[String]], description: Option[String], precedence: Option[Int]) {
+case class ParsedItem(text: Option[String], level: Option[Int], meaningVariants: Option[List[String]], readingVariants: Option[List[String]], description: Option[String], precedence: Option[Int]) {
   def validate: Option[ItemParsingException] = {
     if (valueNotExists(text) || (listNotExists(meaningVariants) && listNotExists(readingVariants) && valueNotExists(description)))
       Some(MajorItemParsingException(constructExceptionMessage))
@@ -39,6 +42,11 @@ case class Item(text: Option[String], level: Option[Int], meaningVariants: Optio
 
   private def valueNotExists(field: Option[String]): Boolean = {
     field.isEmpty || field.get.isEmpty
+  }
+
+  def encode = {
+    implicit val encodeItem: Encoder[ParsedItem] = deriveEncoder[ParsedItem]
+    this.asJson
   }
 
 }
