@@ -1,8 +1,8 @@
 package routes
 
 import actors.ReviewItemsActor.ParseItems
-import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.ContentTypeRange
+import akka.actor.ActorRef
+
 import akka.pattern.ask
 
 import scala.concurrent.duration._

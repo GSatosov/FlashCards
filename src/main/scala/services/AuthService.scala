@@ -43,7 +43,7 @@ class AuthService(implicit db: PostgresProfile.backend.Database, executionContex
     }
   }
 
-  def findUserByLogin(username: String) = {
+  def findUserByLogin(username: String): Future[Option[UserEntry]] = {
     db.run(users.filter(i => i.login === username).result.headOption)
   }
 

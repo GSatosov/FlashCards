@@ -22,9 +22,9 @@ class UserAuthActor(implicit authService: AuthService, executionContext: Executi
       log.info("Received sign up request for: " + username)
       val maybeErrors = Future.sequence(validateSignUpRequest(request))
       val response: Future[Either[Seq[SignUpException], Long]] = maybeErrors.flatMap(sequence =>
-        sequence.flatten match {
+        sequence.flatten.map(SignUpException) match {
           case Nil => authService.handleSignUpRequest(request)
-          case seq => Future.successful(Left(seq.filterNot(_.isEmpty).map(SignUpException)))
+          case seq => Future.successful(Left(seq))
         }
       )
       sender ! response
@@ -34,6 +34,16 @@ class UserAuthActor(implicit authService: AuthService, executionContext: Executi
   private def validateLogInRequest(request: LogInRequest): Seq[LogInException] = {
     val maybeErrors = List(validateUserName(request.username), validatePassword(request.password))
     maybeErrors.flatten.map(LogInException)
+  }
+
+  private def validateSignUpRequest(request: SignUpRequest): Seq[Future[Option[String]]] = {
+    val maybeUsernameError = validateUserName(request.username).fold(authService.findUserByLogin(request.username).map { // If error is not found, check if username is occupied
+      case Some(_) => Some("This username is already occupied.")
+      case None => None
+    })(error => Future.successful(Some(error))) //If error is found (i.e. username is empty), return it
+    val otherMaybeErrors = List(validatePasswords(request.password,
+      request.confirmedPassword)).map(Future.successful)
+    maybeUsernameError :: otherMaybeErrors
   }
 
   private def validateUserName(username: String) = username match {
@@ -55,17 +65,6 @@ class UserAuthActor(implicit authService: AuthService, executionContext: Executi
       case (_, "") => Some("Please confirm your password")
       case (pass, confirmedPass) => if (pass != confirmedPass) Some("Passwords should match") else None
     }
-  }
-
-  private def validateSignUpRequest(request: SignUpRequest): Seq[Future[Option[String]]] = {
-    val errors = List(validateUserName(request.username),
-      validatePasswords(request.password,
-        request.confirmedPassword)).map(Future.successful)
-    println(errors)
-    authService.findUserByLogin(request.username).map {
-      case Some(_) => Some("This username is already occupied.")
-      case None => None
-    } :: errors
   }
 }
 

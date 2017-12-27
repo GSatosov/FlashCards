@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.4" % "test",
   "com.typesafe.akka" %% "akka-http" % "10.0.11",
   "com.typesafe.akka" %% "akka-http-testkit" % "10.0.11" % Test,
-  "org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
+  "org.postgresql" % "postgresql" % "42.1.4",
   "com.github.tminglei" %% "slick-pg" % "0.15.4",
   "com.softwaremill.akka-http-session" %% "core" % "0.5.1",
   "de.heikoseeberger" %% "akka-http-circe" % "1.18.0")
