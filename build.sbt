@@ -24,3 +24,4 @@ libraryDependencies ++= Seq(
   "com.github.tminglei" %% "slick-pg" % "0.15.4",
   "com.softwaremill.akka-http-session" %% "core" % "0.5.1",
   "de.heikoseeberger" %% "akka-http-circe" % "1.18.0")
+enablePlugins(JavaAppPackaging)
