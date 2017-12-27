@@ -11,7 +11,7 @@ import akka.http.scaladsl.server.Directives._
 import scala.concurrent.ExecutionContext
 
 class HttpService(implicit system: ActorSystem, executionContext: ExecutionContext) {
-  implicit val db: PostgresProfile.backend.Database = Database.forConfig("development")
+  implicit val db: PostgresProfile.backend.Database = Database.forConfig("databaseUrl")
   implicit val mainActor: ActorRef = system.actorOf(Props(new MainActor))
   private val itemsRoute = new ItemsRoute
   private val authRoute = new AuthRoute
