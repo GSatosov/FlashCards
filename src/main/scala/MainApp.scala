@@ -17,7 +17,8 @@ object MainApp extends App {
   val httpService = new HttpService
   var port = scala.util.Properties.envOrElse("PORT", "8080").toInt
   println(port)
-  var http = scala.util.Properties.envOrElse("HOST", "localhost")
+  var http = scala.util.Properties.envOrElse("HOST", "0.0.0.0")
+  println(http)
   Http().bindAndHandle(httpService.routes, http, port)
 
 }
