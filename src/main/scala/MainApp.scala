@@ -15,8 +15,9 @@ object MainApp extends App {
 
   implicit val executionContext: ExecutionContext = system.dispatcher
   val httpService = new HttpService
-
-  Http().bindAndHandle(httpService.routes, "localhost", scala.util.Properties.envOrElse("PORT", "8080").toInt)
+  var port = scala.util.Properties.envOrElse("PORT", "8080").toInt
+  println(port)
+  Http().bindAndHandle(httpService.routes, "localhost", port)
 
 }
 
