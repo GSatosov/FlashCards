@@ -4,8 +4,8 @@ import actors.UserAuthActor.{LogInRequest, SignUpRequest}
 import akka.actor.{Actor, ActorLogging, Props}
 import models.exceptions.AuthRequestException.{LogInException, SignUpException}
 import services.AuthService
-
 import scala.concurrent.{ExecutionContext, Future}
+
 
 class UserAuthActor(implicit authService: AuthService, executionContext: ExecutionContext) extends Actor with ActorLogging {
   override def receive: Receive = {
@@ -20,7 +20,7 @@ class UserAuthActor(implicit authService: AuthService, executionContext: Executi
 
     case request@SignUpRequest(username, _, _) =>
       log.info("Received sign up request for: " + username)
-      val maybeErrors = Future.sequence(validateSignUpRequest(request))
+      val maybeErrors = validateSignUpRequest(request)
       val response: Future[Either[Seq[SignUpException], Long]] = maybeErrors.flatMap(sequence =>
         sequence.flatten.map(SignUpException) match {
           case Nil => authService.handleSignUpRequest(request)
@@ -36,14 +36,13 @@ class UserAuthActor(implicit authService: AuthService, executionContext: Executi
     maybeErrors.flatten.map(LogInException)
   }
 
-  private def validateSignUpRequest(request: SignUpRequest): Seq[Future[Option[String]]] = {
+  private def validateSignUpRequest(request: SignUpRequest): Future[Seq[Option[String]]] = {
     val maybeUsernameError = validateUserName(request.username).fold(authService.findUserByLogin(request.username).map { // If error is not found, check if username is occupied
-      case Some(_) => Some("This username is already occupied.")
-      case None => None
+      _.map(_ => "This username is already occupied.")
     })(error => Future.successful(Some(error))) //If error is found (i.e. username is empty), return it
     val otherMaybeErrors = List(validatePasswords(request.password,
       request.confirmedPassword)).map(Future.successful)
-    maybeUsernameError :: otherMaybeErrors
+    Future.sequence(maybeUsernameError :: otherMaybeErrors)
   }
 
   private def validateUserName(username: String) = username match {
@@ -63,7 +62,8 @@ class UserAuthActor(implicit authService: AuthService, executionContext: Executi
       case ("", "") => Some("Please specify your password and confirm it.")
       case ("", _) => Some("Please specify your password")
       case (_, "") => Some("Please confirm your password")
-      case (pass, confirmedPass) => if (pass != confirmedPass) Some("Passwords should match") else None
+      case (pass, confirmedPass) if pass != confirmedPass => Some("Passwords should match")
+      case _ => None
     }
   }
 }
