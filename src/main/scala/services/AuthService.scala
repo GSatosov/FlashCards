@@ -3,6 +3,7 @@ package services
 
 import actors.UserAuthActor.{LogInRequest, SignUpRequest}
 import models.exceptions.AuthRequestException.{LogInException, SignUpException}
+import models.ids.Ids.UserId
 import models.users.{UserEntry, UserTable}
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
@@ -24,14 +25,14 @@ class AuthService(implicit db: PostgresProfile.backend.Database, executionContex
     db.run(MTable.getTables("users")).foreach(tables => if (tables.isEmpty) db.run(users.schema.create))
   }
 
-  def handleSignUpRequest(request: SignUpRequest): Future[Either[Seq[SignUpException], Long]] = {
+  def handleSignUpRequest(request: SignUpRequest): Future[Either[Seq[SignUpException], UserId]] = {
     val salt = createSalt
     val encodedPassword = encodePassword(request.password, salt)
     val userEntry = UserEntry(login = request.username, salt = salt, password = encodedPassword)
     db.run(users returning users.map(_.id) += userEntry).map(userId => Right(userId))
   }
 
-  def handleLoginRequest(request: LogInRequest): Future[Either[Seq[LogInException], Long]] = {
+  def handleLoginRequest(request: LogInRequest): Future[Either[Seq[LogInException], UserId]] = {
     val maybeUser = findUserByLogin(request.username)
     maybeUser.map {
       case None => Left(Seq(LogInException("Wrong credentials.")))

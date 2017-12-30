@@ -1,9 +1,8 @@
 package models.users
 
+import models.ids.Ids.UserId
 
-case class UserEntry(id: Long = 0L,
+case class UserEntry(id: UserId = UserId(0L),
                      login: String,
                      salt: String,
-                     password: String) {
-
-}
+                     password: String)

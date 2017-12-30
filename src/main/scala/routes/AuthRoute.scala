@@ -19,20 +19,21 @@ import com.softwaremill.session.CsrfOptions._
 import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
 import models.exceptions.AuthRequestException.SignUpException
+import models.ids.Ids.UserId
+import models.items.Deck
 import models.sessions.{Session, SessionSupport}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 class AuthRoute(implicit mainActor: ActorRef, executionContext: ExecutionContext) extends SessionSupport {
-
   implicit lazy val timeout = Timeout(5 seconds)
   lazy val routes: Route =
     path("login") {
       concat(
         post {
           entity(as[LogInRequest]) { request: LogInRequest =>
-            val response = (mainActor ? request).mapTo[Future[Either[Seq[String], Long]]]
+            val response = (mainActor ? request).mapTo[Future[Either[Seq[String], UserId]]]
             onComplete(response.flatten) {
               case Failure(err) => complete(err.getMessage)
               case Success(value) => value match {
@@ -48,14 +49,14 @@ class AuthRoute(implicit mainActor: ActorRef, executionContext: ExecutionContext
           requiredSession(refreshable, usingCookies) { session => //For testing purposes
             ctx =>
               println(session)
-              ctx.complete(session.username)
+              ctx.complete(session.id)
           }
         }
       )
     } ~ path("signUp") {
       post {
         entity(as[SignUpRequest]) { signUpRequest =>
-          val response = (mainActor ? signUpRequest).mapTo[Future[Either[Seq[SignUpException], Long]]]
+          val response = (mainActor ? signUpRequest).mapTo[Future[Either[Seq[SignUpException], UserId]]]
           onComplete(response.flatten) {
             case Failure(err) => complete(err.getMessage)
             case Success(errorsOrUser) => errorsOrUser match {

@@ -2,7 +2,9 @@ package models.items
 
 import java.sql.Date
 
-case class ItemEntry(id: Long = 0L,
+import models.ids.Ids.ItemId
+
+case class ItemEntry(id: ItemId = ItemId(0L),
                      text: String,
                      level: Int = 1,
                      meaningVariants: List[String],

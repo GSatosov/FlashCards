@@ -1,10 +1,12 @@
 package models.items
 
 import java.sql.Date
+
+import models.ids.Ids.ItemId
 import models.postgresProfile.MyPostgresProfile.api._
 
-class ItemTable(tag: Tag) extends Table[ItemEntry](tag, "items") {
-  def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+class Deck(tag: Tag)(name: String) extends Table[ItemEntry](tag, name) {
+  def id = column[ItemId]("id", O.PrimaryKey, O.AutoInc)
 
   def text = column[String]("text")
 

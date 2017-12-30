@@ -4,12 +4,12 @@ import com.softwaremill.session.{SessionSerializer, SingleValueSessionSerializer
 
 import scala.util.Try
 
-case class Session(username: String)
+case class Session(id: String)
 
 
 object Session {
   implicit def serializer: SessionSerializer[Session, String] = new SingleValueSessionSerializer(
-    _.username,
+    _.id,
     (un: String) => Try {
       Session(un)
     })
