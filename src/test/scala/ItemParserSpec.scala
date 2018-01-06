@@ -1,6 +1,6 @@
 
 import models.exceptions.JsonParsingException._
-import services.ItemService
+import services.ItemsAndDecksService
 import org.scalatest._
 import slick.jdbc.PostgresProfile.api._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class ItemParserSpec extends FunSuite with Matchers {
   //TODO rewrite everything here
   implicit val db: slick.jdbc.PostgresProfile.backend.Database = Database.forConfig("databaseUrl")
-  val itemService = new ItemService
+  val itemService = new ItemsAndDecksService
 
   test("Printing results of valid test sample№1") {
     val results = itemService.getItemsOutOfString(validJSON).right.get

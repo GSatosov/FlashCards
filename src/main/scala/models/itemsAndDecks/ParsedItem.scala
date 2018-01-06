@@ -1,4 +1,4 @@
-package models.items
+package models.itemsAndDecks
 
 
 import io.circe.syntax._

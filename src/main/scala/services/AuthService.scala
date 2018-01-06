@@ -17,13 +17,9 @@ class AuthService(implicit db: PostgresProfile.backend.Database, executionContex
   private val users = TableQuery[UserTable]
   createSchemaIfNotExists
 
-  private def getUsers: Future[Seq[UserEntry]] = {
-    db.run(users.result)
-  }
-
-  private def createSchemaIfNotExists: Unit = {
+  private def createSchemaIfNotExists: Unit =
     db.run(MTable.getTables("users")).foreach(tables => if (tables.isEmpty) db.run(users.schema.create))
-  }
+
 
   def handleSignUpRequest(request: SignUpRequest): Future[Either[Seq[SignUpException], UserId]] = {
     val salt = createSalt
@@ -44,9 +40,8 @@ class AuthService(implicit db: PostgresProfile.backend.Database, executionContex
     }
   }
 
-  def findUserByLogin(username: String): Future[Option[UserEntry]] = {
+  def findUserByLogin(username: String): Future[Option[UserEntry]] =
     db.run(users.filter(i => i.login === username).result.headOption)
-  }
 
   private def encodePassword(password: String, saltedString: String) = {
     String.format("%064x", new java.math.BigInteger(1,
@@ -58,4 +53,8 @@ class AuthService(implicit db: PostgresProfile.backend.Database, executionContex
     Random.nextBytes(toBeSalt)
     toBeSalt.map("%02x".format(_)).mkString
   }
+
+  def getUserNamesByIds(futureIds: Future[Seq[UserId]]): Future[Seq[Option[String]]] =
+    futureIds.flatMap(ids => Future.sequence(ids.map(id => db.run(users.filter(_.id === id).map(_.login).result.headOption))))
+
 }

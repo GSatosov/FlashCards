@@ -20,7 +20,7 @@ import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
 import models.exceptions.AuthRequestException.SignUpException
 import models.ids.Ids.UserId
-import models.items.Deck
+import models.itemsAndDecks.Deck
 import models.sessions.{Session, SessionSupport}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,7 +46,7 @@ class AuthRoute(implicit mainActor: ActorRef, executionContext: ExecutionContext
             }
           }
         }, get {
-          requiredSession(refreshable, usingCookies) { session => //For testing purposes
+          requiredSession(refreshable, usingCookies) { session => //For testing purposes TODO remove
             ctx =>
               println(session)
               ctx.complete(session.id)

@@ -79,6 +79,5 @@ object UserAuthActor {
 
   case class SignUpRequest(username: String, password: String, confirmedPassword: String) extends AuthRequest
 
-
 }
 
