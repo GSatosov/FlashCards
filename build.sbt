@@ -25,6 +25,7 @@ libraryDependencies ++= Seq(
   "com.github.tminglei" %% "slick-pg" % "0.15.4",
   "com.softwaremill.akka-http-session" %% "core" % "0.5.1",
   "de.heikoseeberger" %% "akka-http-circe" % "1.18.0",
-  "org.slf4j" % "slf4j-simple" % "1.7.21")
+  "org.slf4j" % "slf4j-simple" % "1.7.21",
+  "com.h2database" % "h2" % "1.4.185")
 
 enablePlugins(JavaAppPackaging)

@@ -1,34 +1,30 @@
 
 import models.exceptions.JsonParsingException._
-import services.ItemsAndDecksService
+import services.ItemParser
 import org.scalatest._
-import slick.jdbc.PostgresProfile.api._
-import scala.concurrent.ExecutionContext.Implicits.global
+
 
 class ItemParserSpec extends FunSuite with Matchers {
   //TODO rewrite everything here
-  implicit val db: slick.jdbc.PostgresProfile.backend.Database = Database.forConfig("databaseUrl")
-  val itemService = new ItemsAndDecksService
-
   test("Printing results of valid test sample№1") {
-    val results = itemService.getItemsOutOfString(validJSON).right.get
+    val results = ItemParser.getItemsOutOfString(validJSON).right.get
     println(results)
   }
 
   test("Passing a faulty json should produce an error") {
-    assert(itemService.getItemsOutOfString("randomString").isLeft)
+    assert(ItemParser.getItemsOutOfString("randomString").isLeft)
   }
   test("Validating a correct item should not produce an exception") {
-    val validatedItem = itemService.getItemsOutOfString(CorrectItem).right.get
+    val validatedItem = ItemParser.getItemsOutOfString(CorrectItem).right.get
     assert(validatedItem._1.nonEmpty && validatedItem._2.isEmpty)
   }
   test("Validating an item without important field should produce a minor exception") {
-    val validatedItem = itemService.getItemsOutOfString(ItemWithoutADescription).right.get
+    val validatedItem = ItemParser.getItemsOutOfString(ItemWithoutADescription).right.get
     assert(validatedItem._1.nonEmpty)
     validatedItem._2.foreach(_ shouldBe a[MinorItemParsingException])
   }
   test("Validating items without necessary fields should produce major exceptions") {
-    val validatedItems = itemService.getItemsOutOfString(itemsThatShouldRaiseMajorExceptions).right.get
+    val validatedItems = ItemParser.getItemsOutOfString(itemsThatShouldRaiseMajorExceptions).right.get
     assert(validatedItems._1.isEmpty)
     validatedItems._2.foreach(_ shouldBe a[MajorItemParsingException])
   }

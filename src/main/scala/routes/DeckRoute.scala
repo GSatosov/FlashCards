@@ -1,6 +1,6 @@
 package routes
 
-import actors.ItemsAndDecksActor.{CreateDeckRequest, GetDecks, GetDecksByUserId}
+import actors.ItemsAndDecksActor.{CreateDeckRequest, GetDecks, GetDecksByUserId, GetItemsByDeckId}
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.StatusCodes
 import akka.pattern.ask
@@ -14,13 +14,11 @@ import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import akka.util.Timeout
 import io.circe.generic.auto._
-
 import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
-
-import models.exceptions.DeckParsingException
-
+import models.exceptions.{DeckParsingException, UrlAccessException}
 import models.ids.Ids.{DeckId, UserId}
+import models.itemsAndDecks.ParsedItem
 import models.sessions.{Session, SessionSupport}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,14 +36,28 @@ class DeckRoute(implicit mainActor: ActorRef, executionContext: ExecutionContext
         }
       }
     } ~
-      pathPrefix("my_decks") {
+      path(LongNumber) { deckId => //Endpoint for accessing a specific deck.
         get {
           requiredSession(refreshable, usingCookies) { session =>
-              val response = (mainActor ? GetDecksByUserId(UserId(session.id.toLong))).mapTo[Future[Seq[(DeckId, String)]]]
-              onComplete(response.flatten) {
-                case Failure(err) => complete(err.getMessage)
-                case Success(value) => complete(value)
+            val response = (mainActor ? GetItemsByDeckId(DeckId(deckId))).mapTo[Future[Either[UrlAccessException, Seq[ParsedItem]]]]
+            onComplete(response.flatten) {
+              case Failure(err) => complete(err.getMessage)
+              case Success(errorOrValue) => errorOrValue match {
+                case Left(error) => complete(error)
+                case Right(deck) => complete(deck)
               }
+            }
+          }
+        }
+      } ~
+      path("my") {
+        get {
+          requiredSession(refreshable, usingCookies) { session =>
+            val response = (mainActor ? GetDecksByUserId(UserId(session.id.toLong))).mapTo[Future[Seq[(DeckId, String)]]]
+            onComplete(response.flatten) {
+              case Failure(err) => complete(err.getMessage)
+              case Success(value) => complete(value)
+            }
           }
         } ~
           path("new") {
@@ -62,14 +74,11 @@ class DeckRoute(implicit mainActor: ActorRef, executionContext: ExecutionContext
                       case Failure(err) => complete(err.getMessage)
                       case Success(value) => value match {
                         case Left(error) => complete(error)
-                        case Right(id) => redirect("my_decks/" + id.value, StatusCodes.PermanentRedirect)
+                        case Right(id) => redirect("decks/" + id.value, StatusCodes.PermanentRedirect)
                       }
                     }
                   }
                 }
-              } ~
-              path(IntNumber) { deckId => //Endpoint for accessing a specific deck.
-                complete(deckId)
               }
           }
       }

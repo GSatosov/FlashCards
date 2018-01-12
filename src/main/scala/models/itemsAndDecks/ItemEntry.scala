@@ -1,6 +1,6 @@
 package models.itemsAndDecks
 
-import java.sql.Date
+import java.sql.Timestamp
 
 import models.ids.Ids.ItemId
 
@@ -12,5 +12,5 @@ case class ItemEntry(id: ItemId = ItemId(0L),
                      description: String,
                      precedence: Int = 10,
                      knowledgeLevel: Int = 1,
-                     unlockDate: Option[Date],
-                     reviewDate: Option[Date])
+                     unlockDate: Option[Timestamp],
+                     reviewDate: Option[Timestamp])

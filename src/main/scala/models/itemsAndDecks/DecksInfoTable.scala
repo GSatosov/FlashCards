@@ -11,7 +11,7 @@ class DecksInfoTable(tag: Tag) extends Table[DecksInfoEntry](tag, "decks") {
 
   def authorId = column[UserId]("authorId")
 
-  def subscribers = column[List[Long]]("subscribers") //List of value classes is not supported for some reason
+  def basedOn = column[Option[DeckId]]("basedOn")
 
-  override def * = (id, name, authorId, subscribers).mapTo[DecksInfoEntry]
+  override def * = (id, name, authorId, basedOn).mapTo[DecksInfoEntry]
 }

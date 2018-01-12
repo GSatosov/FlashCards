@@ -4,31 +4,88 @@ package services
 import actors.UserAuthActor.{LogInRequest, SignUpRequest}
 import models.exceptions.AuthRequestException.{LogInException, SignUpException}
 import models.ids.Ids.UserId
+import models.postgresProfile.MyPostgresProfile
 import models.users.{UserEntry, UserTable}
-import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
+
+import models.postgresProfile.MyPostgresProfile.api._
 import slick.jdbc.meta.MTable
 import slick.lifted.TableQuery
-
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Random
 
-class AuthService(implicit db: PostgresProfile.backend.Database, executionContext: ExecutionContext) {
+class AuthService(implicit db: MyPostgresProfile.backend.Database, executionContext: ExecutionContext) {
   private val users = TableQuery[UserTable]
   createSchemaIfNotExists
 
-  private def createSchemaIfNotExists: Unit =
-    db.run(MTable.getTables("users")).foreach(tables => if (tables.isEmpty) db.run(users.schema.create))
+  private def createSchemaIfNotExists: Unit = {
+    val creationQuery = db.run(MTable.getTables("users")).flatMap(tables => if (tables.isEmpty) db.run(users.schema.create) else Future.successful())
+    Await.result(creationQuery, Duration.Inf)
+    println("created schema")
+  }
 
-
-  def handleSignUpRequest(request: SignUpRequest): Future[Either[Seq[SignUpException], UserId]] = {
+  private def createUser(request: SignUpRequest): Future[Right[Seq[SignUpException], UserId]] = {
     val salt = createSalt
     val encodedPassword = encodePassword(request.password, salt)
     val userEntry = UserEntry(login = request.username, salt = salt, password = encodedPassword)
     db.run(users returning users.map(_.id) += userEntry).map(userId => Right(userId))
   }
 
+  def handleSignUpRequest(request: SignUpRequest): Future[Either[Seq[SignUpException], UserId]] = {
+    val maybeErrors = validateSignUpRequest(request)
+    maybeErrors.flatMap {
+      case Nil => createUser(request)
+      case seq => Future.successful(Left(seq))
+    }
+  }
+
+  private def validateLogInRequest(request: LogInRequest): Seq[LogInException] = {
+    val maybeErrors = List(validateUserName(request.username), validatePassword(request.password))
+    maybeErrors.flatten.map(LogInException)
+  }
+
+  private def validateSignUpRequest(request: SignUpRequest): Future[Seq[SignUpException]] = {
+    val maybeUsernameErrorFuture = validateUserName(request.username).fold(findUserByLogin(request.username).map {
+      _.map(_ => "This username is already occupied.")
+    })(error => Future.successful(Some(error)))
+    for {
+      maybeUsernameError <- maybeUsernameErrorFuture
+      maybePasswordError = validatePasswords(request.password, request.confirmedPassword)
+    }
+      yield Seq(maybeUsernameError, maybePasswordError).flatten.map(SignUpException)
+  }
+
+  private def validateUserName(username: String) = username match {
+    case "" => Some("Username must not be empty")
+    case _ => None
+  }
+
+  private def validatePassword(password: String) = {
+    password match {
+      case "" => Some("Please specify your password")
+      case _ => None
+    }
+  }
+
+  private def validatePasswords(password: String, confirmedPassword: String) = {
+    (password, confirmedPassword) match {
+      case ("", "") => Some("Please specify your password and confirm it.")
+      case ("", _) => Some("Please specify your password")
+      case (_, "") => Some("Please confirm your password")
+      case (pass, confirmedPass) if pass != confirmedPass => Some("Passwords should match")
+      case _ => None
+    }
+  }
+
   def handleLoginRequest(request: LogInRequest): Future[Either[Seq[LogInException], UserId]] = {
+    val maybeErrors = validateLogInRequest(request)
+    maybeErrors match {
+      case Nil => authenticateLogIn(request)
+      case seq => Future.successful(Left(seq))
+    }
+  }
+
+  private def authenticateLogIn(request: LogInRequest) = {
     val maybeUser = findUserByLogin(request.username)
     maybeUser.map {
       case None => Left(Seq(LogInException("Wrong credentials.")))
@@ -53,8 +110,4 @@ class AuthService(implicit db: PostgresProfile.backend.Database, executionContex
     Random.nextBytes(toBeSalt)
     toBeSalt.map("%02x".format(_)).mkString
   }
-
-  def getUserNamesByIds(futureIds: Future[Seq[UserId]]): Future[Seq[Option[String]]] =
-    futureIds.flatMap(ids => Future.sequence(ids.map(id => db.run(users.filter(_.id === id).map(_.login).result.headOption))))
-
 }
