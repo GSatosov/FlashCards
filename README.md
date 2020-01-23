@@ -7,5 +7,3 @@ To run execute ``sbt run main ``
 ## Stack
 
 PostgreSQL, Cats, Slick
-
-T
